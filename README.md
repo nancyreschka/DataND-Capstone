@@ -127,20 +127,32 @@ The data contains the following information:
 
 The data is read from different data sources, cleaned, and finally stored in parquet files for analytic purposes.
 
+### Justification for data model
+
+For the analytic purpose of this project the star model is used because:
+* It is simple to understand and build
+* No need for complex joins when querying data
+* Accessing data is faster (no big join above various tables to generate results)
+* Simpler to derive business insights
+
+Other data schemas like snowflake schema might have lower redundancy but there need to be done a lot of join to query the data.
+
 ### Necessary steps to pipeline the data into the data model
 
+The ETL pipeline can be found in the files ```etl_main.py``` and ```etl_capstone.py```.
+
 - read label descriptions for immigration data
-- data quality check for label descriptions
-- save descriptions data to parquet files
 - read and clean immigration data
-- data quality check for immigration data
-- save immigration data to parquet files
 - read and clean demographic data
-- data quality check for demograhic data
-- save demographic data to parquet files
 - read and clean world temperature data
-- data quality check for temperature data
 - join temperature data with country codes
+- data quality check for label descriptions
+- data quality check for immigration data
+- data quality check for demograhic data
+- data quality check for temperature data
+- save descriptions data to parquet files
+- save immigration data to parquet files
+- save demographic data to parquet files
 - save temperature data to parquet files
 
 ## Reflection on possible scenarios
@@ -154,7 +166,8 @@ Since there is only one month processed the data should be updated every month.
 
 ### The data was increased by 100x
 
-If the data would increase by 100x Spark would still be able to handle this data volume.  
+If the data would increase by 100x Spark would still be able to handle this data volume.
+One important thing to think about is on which machine the ETL will be executed. If it is on a non-scalable infrastructure e.g. a single PC there will be limits for effectively running the ETL. For more datasets it will be better to use a cloud service like AWS EMR that allows Spark to be scaled to process data using multiple clusters. As for the interface, between the EMR and my application, the data could be stored on S3 and the queries could be passed through AWS CLI interface.
 
 ### The data populates a dashboard that must be updated on a daily basis by 7am every day
 
@@ -162,4 +175,4 @@ If the data populates a dashboard that must be updated on a daily basis by 7am e
 
 ### The database needed to be accessed by 100+ people
 
-If the database needed to be accessed by 100+ people I would make the database available in Amazon Redshift.
+If the database needed to be accessed by 100+ people I would make the database available in Amazon Redshift, because it does have the capability to process a large number of simultaneous queries.
