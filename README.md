@@ -142,3 +142,24 @@ The data is read from different data sources, cleaned, and finally stored in par
 - data quality check for temperature data
 - join temperature data with country codes
 - save temperature data to parquet files
+
+## Reflection on possible scenarios
+
+How to approach the problem differently under the following scenarios.
+
+### My approach
+
+I used Apache Spark to process the data because it can easily handle big data, and with the schema-on-read functionality it is pretty convienient if you do not know the data in all it's details beforehand. The script is easily adaptable to possible reading the data from s3 and running the script on an EMR cluster.
+Since there is only one month processed the data should be updated every month.
+
+### The data was increased by 100x
+
+If the data would increase by 100x Spark would still be able to handle this data volume.  
+
+### The data populates a dashboard that must be updated on a daily basis by 7am every day
+
+If the data populates a dashboard that must be updated on a daily basis by 7am every day I would setup the pipeline in Apache Airflow and schedule a daily execution time on 7am.  
+
+### The database needed to be accessed by 100+ people
+
+If the database needed to be accessed by 100+ people I would make the database available in Amazon Redshift.
