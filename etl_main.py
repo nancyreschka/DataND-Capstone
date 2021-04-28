@@ -54,35 +54,58 @@ def main():
     
     # read label descriptions for immigration data
     i94cit_res_df, i94port_df, i94mode_df, i94state_df, i94visa_df = etl_capstone.read_i94_sas_label_descriptions(spark, labels_file_name)
-    etl_capstone.quality_check("country_codes", i94cit_res_df)
-    etl_capstone.quality_check("port_codes", i94port_df)
-    etl_capstone.quality_check("mode_codes", i94mode_df)
-    etl_capstone.quality_check("state_codes", i94state_df)
-    etl_capstone.quality_check("visa_codes", i94visa_df)
     
+    # read immigration data
+    immi_df = etl_capstone.read_and_clean_immigration_data(spark, immigration_data_file_name)
+    
+    # read demographic data
+    demo_df = etl_capstone.read_and_clean_demographic_data(spark, demographic_data_file_name)
+    
+    # read world temperature data
+    temp_df = etl_capstone.read_and_clean_temperature_data(spark, world_temperature_data_file_name)
+    temp_df = etl_capstone.join_temperature_data_with_country_codes(temp_df, i94cit_res_df)
+    
+    # create view for data quality checks
+    i94cit_res_df.createOrReplaceTempView("country_codes")
+    i94port_df.createOrReplaceTempView("port_codes")
+    i94mode_df.createOrReplaceTempView("mode_codes")
+    i94state_df.createOrReplaceTempView("state_codes")
+    i94visa_df.createOrReplaceTempView("visa_codes")
+    immi_df.createOrReplaceTempView("immigration")
+    demo_df.createOrReplaceTempView("demographic")
+    temp_df.createOrReplaceTempView("temperature")
+
+    # data checks
+    data_checks = {"country_codes": i94cit_res_df,
+                   "port_codes": i94port_df,
+                   "mode_codes": i94mode_df,
+                   "state_codes": i94state_df,
+                   "visa_codes": i94visa_df,
+                   "immigration": immi_df,
+                   "demographic": demo_df,
+                   "temperature": temp_df }
+    
+    columns_to_check = {"country_codes": ["country_code"],
+                   "port_codes": ["port_code"],
+                   "mode_codes": ["mode_code"],
+                   "state_codes": ["state_code"],
+                   "visa_codes": ["visa_code"],
+                   "immigration": ["cicid", "year", "month", "citizenship", "residence", "state_code"],
+                   "demographic": ["id", "city", "state_code"],
+                   "temperature": ["temp_id", "country_code"] }
+
+    for table_name, data_frame in data_checks.items():
+        etl_capstone.quality_check(table_name, data_frame, 0)
+        etl_capstone.nullValueCheck(spark, table_name, columns_to_check[table_name])
+        
     # save data to parquet files
     i94cit_res_df.write.parquet(output_data + "/country_codes", mode="overwrite")
     i94port_df.write.parquet(output_data + "/port_codes", mode="overwrite")
     i94mode_df.write.parquet(output_data + "/mode_codes", mode="overwrite")
     i94state_df.write.parquet(output_data + "/state_codes", mode="overwrite")
     i94visa_df.write.parquet(output_data + "/visa_codes", mode="overwrite")
-    
-    # read immigration data
-    immi_df = etl_capstone.read_and_clean_immigration_data(spark, immigration_data_file_name)
-    etl_capstone.quality_check("immigration", immi_df)
-    # save data to parquet files
     immi_df.write.parquet(output_data + "/immigration", mode="overwrite")
-    
-    # read demographic data
-    demo_df = etl_capstone.read_and_clean_demographic_data(spark, demographic_data_file_name)
-    etl_capstone.quality_check("demographic", demo_df)
-    # save data to parquet files
     demo_df.write.parquet(output_data + "/demographic", mode="overwrite")
-
-    # read world temperature data
-    temp_df = etl_capstone.read_and_clean_temperature_data(spark, world_temperature_data_file_name)
-    temp_df = etl_capstone.join_temperature_data_with_country_codes(temp_df, i94cit_res_df)
-    etl_capstone.quality_check("temperature", temp_df)
     temp_df.write.parquet(output_data + "/temperature", mode="overwrite")
 
 if __name__ == "__main__":

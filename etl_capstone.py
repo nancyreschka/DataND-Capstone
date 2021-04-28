@@ -285,10 +285,12 @@ def join_temperature_data_with_country_codes(temperature_data, country_codes):
     print("join world temperature data records with country codes after join:" + str(temperature_data.count()))
     return newtemp
 
-def quality_check(table_name, data_frame):
+def quality_check(table_name, data_frame, result):
     """
     - Checks if the dataframe has rows
-    - If the dataframe doesn't have rows, the check failed, otherwise it passed.
+    - Check if there are no null values
+    - If the dataframe doesn't have rows or there are null values, the check failed, otherwise it passed.
+    - Throws a ValueError exception is test fails
     
     Parameters:
         table_name: name of the table thate will be checked
@@ -299,7 +301,25 @@ def quality_check(table_name, data_frame):
     """
     count = data_frame.count()
     
-    if count == 0:
-        print("Data quality check FAILED for table {}.".format(table_name))
+    if count == result:
+        raise ValueError(f"Data quality check FAILED for table {table_name} - {result} rows.")
     else:
         print("Data quality check PASSED for table {} with {} rows.".format(table_name, count))
+        
+def nullValueCheck(spark, table, columns):
+    """
+    - This function performs null value checks for the columns of the given table
+    - Raises a ValueError exception when null values are encountered
+    
+    Parameters:
+        spark: spark context
+        table: table where the null values shall be checked
+        data_frame: the data_frame that shall be checked
+        columns: columns that shall be checked for null values
+    """  
+    print(f"Performing null value check on table {table}")
+    for column in columns:
+        returnedVal = spark.sql(f"""SELECT COUNT(*) as nbr FROM {table} WHERE {column} IS NULL""")
+        if returnedVal.head()[0] > 0:
+            raise ValueError(f"Null value check failed! Found NULL values in {column} column!")
+    print(f"Table {table} passed.")        
